@@ -9,15 +9,16 @@ import MainPage from "./components/MainPage";
 import Lists from "./components/Lists";
 import ImportFile from "./components/ImportFile";
 import AddPoint from "./components/AddPoint";
+import CurrentList from "./components/CurrentList";
 
 function App() {
 	return (
 		<Router>
 			<Switch>
-				<Route exact path="/" component={MainPage}/>
+			//	<Route exact path="/" component={MainPage}/>
 				<Route path="/lists" component={Lists}/>
+				<Route path={["/list/:id", "/list/"]} component={CurrentList}/>
 				<Route path="/importFile" component={ImportFile}/>
-				<Route path="/addPoint" component={AddPoint}/>
 			</Switch>
 		</Router>
 	);
