@@ -22,7 +22,6 @@ class Layout extends React.Component {
 					<div>
 					  <Link to={'/list'} onClick={this.handleUseOther}>Create new list</Link><br/>
 					  <Link to={'/lists'} onClick={this.handleUseOther}>Saved lists</Link> <br/>
-					  <Link to={'/importFile'} onClick={this.handleUseOther} >Import file with points</Link> <br/>
 				   </div>
 				  
 				   <div>
