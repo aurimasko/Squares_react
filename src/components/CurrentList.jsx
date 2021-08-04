@@ -2,22 +2,52 @@
 import { Link } from "react-router-dom";
 import Layout from './Layout';
 import { listsService } from "../services/listsService.js";
+import { fileService } from "../services/fileService.js";
+/*
+const useSortableData = (items, config = null) => {
+  const [sortConfig, setSortConfig] = React.useState(config);
+  
+  const sortedItems = React.useMemo(() => {
+    let sortableItems = [...items];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [items, sortConfig]);
 
-function loadSelectedList(list) {
-	this.setState({list});
-}
-	
+  const requestSort = key => {
+    let direction = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  }
+
+  return { items: sortedItems, requestSort };
+}*/
+
 class CurrentList extends React.Component {
-	
+
+
 	constructor(props) {
 		super(props);
 		
 		this.state = {
 			inputCoordX: null,
 			inputCoordY: null, 
-			currentList: [],
+			inputListName: null,
+			list: { id: null, Name: null },
+			listPoints: [],
 			isSaveListButtonClicked: false,
-			listName: null
+			sortDirection: 'ascending'
 		};
 		
 		this.handleCoordXChange = this.handleCoordXChange.bind(this);
@@ -25,8 +55,28 @@ class CurrentList extends React.Component {
 		this.handleSubmit = this.handleSubmit.bind(this);
 		this.handleListNameChange = this.handleListNameChange.bind(this);
 		this.handleSaveListSubmit = this.handleSaveListSubmit.bind(this);
-		loadSelectedList = loadSelectedList.bind(this);
 	}
+			
+	showFile = async (e) => {
+		e.preventDefault()
+
+		let result = await fileService.importFile(e.target.files[0]);
+		
+		e.target.value = null;
+
+		if (result.isSuccess === true) {
+			if(result.content != null)
+				// to do: avoid duplicates
+				// max 10 000
+				this.setState({listPoints: result.content.points});
+			
+				if(result.content.skippedLines)
+					alert('Some lines in the file was skipped because it was presented in the wrong format or duplicated.');
+		} else {
+			this.setState({errmessage: 'It is not possible to get lists. Error message: ' + result.message})
+		}
+	}
+		
 
 	async componentDidMount() {
 		this.getData();
@@ -47,22 +97,21 @@ class CurrentList extends React.Component {
 			
 			if (result.isSuccess === true) {
 				if(result.content != null)
-					this.setState({currentList: result.content.points, listName: result.content.name});
+					this.setState({listPoints: result.content.points, list: result.content});
 			} else {
 				this.setState({errmessage: 'It is not possible to get lists. Error message: ' + result.message})
 			}
 		}
 		else
-			this.setState({currentList: [], listName: null});
+			this.setState({listPoints: [], list: { Name: null, id:null}});
 	}
 	
 	renderListActions(){
-		if(this.state.listName != null) {
+		if(this.state.list.name != null) {
 			return(
 				<>
-					<form onSubmit={this.handleUpdateListSubmit}>
-						<label>List name:</label>
-						<input type="text" value={this.state.listName} onChange={this.handleListNameChange}/>
+					<form onSubmit={this.handleSaveListSubmit}>
+						<label>List name: {this.state.list.name}</label>
 						<br/>
 						<input type="submit" value="Save changes"/>
 					</form>
@@ -72,7 +121,7 @@ class CurrentList extends React.Component {
 		}
 		else
 		{
-			if(this.state.currentList.length > 0) {
+			if(this.state.listPoints.length > 0) {
 				return(
 					<>
 						<button type="submit" onClick={this.handleSaveTheList.bind(this)}>Save the list</button><br/><br/>
@@ -89,7 +138,7 @@ class CurrentList extends React.Component {
 				<>
 					<form onSubmit={this.handleSaveListSubmit}>
 						<label>List name:</label>
-						<input type="text" value={this.state.listName} onChange={this.handleListNameChange}/>
+						<input type="text" value={this.state.inputListName}  onChange={this.handleListNameChange}/>
 						<br/>
 						<input type="submit" value="Save the list"/>
 					</form>
@@ -99,6 +148,40 @@ class CurrentList extends React.Component {
 		}
 		else 
 			return null;
+	}
+
+	renderAddNewPoints() {
+		if(this.state.listPoints.length >= 10000){
+			return(<p>List if full (max 10 000 points). In order to add new points, you need to delete some of the existing ones.</p>);
+		}
+		else
+		{
+			return (
+					<>
+						Add new point to the current list:
+				
+						<form onSubmit={this.handleSubmit}>
+							<label>Coordinate X:</label>
+							<input value={this.state.inputCoordX} type="number" onChange={this.handleCoordXChange}/>
+							<br/>
+							<label>Coordinate Y:</label>
+							<input value={this.state.inputCoordY} type="number" onChange={this.handleCoordYChange}/>
+							<br/>
+							<input type="submit" value="Add point"/>
+						</form>
+						<br/><br/>
+						Import file of points:<br/>
+						<input type="file" accept=".txt" onChange={(e) => this.showFile(e)}/><br/>
+					</>
+				);
+		}
+	}
+	sortPoints(field) {
+		let sortableItems = [...this.state.listPoints];
+		let sortFunction = this.state.sortDirection == 'ascending' ? (a, b) => b[field] - a[field] : (a, b) => a[field] - b[field];
+		sortableItems.sort(sortFunction);
+		
+		this.setState({listPoints: sortableItems, sortDirection: this.state.sortDirection == 'ascending' ? 'descending' : 'ascending'});
 	}
 	
 	render() {
@@ -113,14 +196,14 @@ class CurrentList extends React.Component {
 						<table>
 							<thead>
 								<tr>
-									<th>Coord X</th>
-									<th>Coord Y</th>
+									<th><button type="submit" onClick={this.sortPoints.bind(this,'coordX')}>Coord X</button></th>
+									<th><button type="submit" onClick={this.sortPoints.bind(this, 'coordY')}>Coord Y</button></th>
 									<th>Actions</th>
 								</tr>
 							</thead>
 							
 							<tbody>
-								{this.state.currentList.map((point) => (
+								{this.state.listPoints.map((point) => (
 									<tr>
 										<td>{point.coordX}</td>
 										<td>{point.coordY}</td>
@@ -132,21 +215,11 @@ class CurrentList extends React.Component {
 							</tbody>
 						</table>
 						
-						{this.state.currentList.length > 0 ? (
+						{this.state.listPoints.length > 0 ? (
 							<button type="submit" onClick={this.handleAllPointsDelete.bind(this)}>Delete all points</button>
 						) : null}
 						<br/><br/>
-						Add new point to the current list:
-				
-						<form onSubmit={this.handleSubmit}>
-							<label>Coordinate X:</label>
-							<input value={this.state.inputCoordX} type="number" onChange={this.handleCoordXChange}/>
-							<br/>
-							<label>Coordinate Y:</label>
-							<input value={this.state.inputCoordY} type="number" onChange={this.handleCoordYChange}/>
-							<br/>
-							<input type="submit" value="Add point"/>
-						</form>
+						{this.renderAddNewPoints()}
 					</Layout>
 					
 					
@@ -154,21 +227,21 @@ class CurrentList extends React.Component {
 	}
 	
 	handleListNameChange(event) {
-		this.setState({ listName: event.target.value});
+		this.setState({inputListName: event.target.value});
 	}
 	
 	handleUpdateListSubmit(event){
-			/*listsService.updateList(this.state.listId, this.state.currentList).then((data) => {
+			listsService.updateList(this.state.list.id, this.state.listPoints).then((data) => {
 			if(data.isSuccess) {
 				alert('List was successfuly updated');
 			}
 			else
 				alert('Error' + data.message);
-		});*/
+		});
 	}
 		
-	handleSaveListSubmit(event) {
-		listsService.createList(this.state.listName, this.state.currentList).then((data) => {
+	handleSaveListSubmit(event) {//-------------------------------------------------
+		listsService.createList(/*this.state.inputListName*/this.state.list.name, this.state.listPoints).then((data) => {
 			if(data.isSuccess) {
 				alert('List was successfuly saved');
 				
@@ -179,6 +252,7 @@ class CurrentList extends React.Component {
 				alert('Error: ' + data.message);
 			}
 		});
+		
 		event.preventDefault();
 	}
 	
@@ -195,15 +269,15 @@ class CurrentList extends React.Component {
 	
 	handleAllPointsDelete() {
 		if(window.confirm('Are you sure you want to delete all points from the current list?'))
-			this.setState({currentList: []});
+			this.setState({listPoints: []});
 	}
 	
 	handlePointDeleteSubmit(point) {
-		const newList = this.state.currentList;
+		const newList = this.state.listPoints;
 		
 		if(newList.indexOf(point) > -1){
 			newList.splice(newList.indexOf(point), 1);
-			this.setState({currentList: newList});
+			this.setState({listPoints: newList});
 		}
 	}
 	
@@ -217,17 +291,17 @@ class CurrentList extends React.Component {
 			alertMessage = alertMessage +  'Coordinate Y must be between -5000 and 5000.\n';
 		}
 		
-		if(this.state.currentList.some(item => this.state.inputCoordX == item.coordX && this.state.inputCoordY == item.coordY)) {
+		if(this.state.listPoints.some(item => this.state.inputCoordX == item.coordX && this.state.inputCoordY == item.coordY)) {
 			alertMessage = alertMessage + 'Duplicate points are not allowed\n';
 		}
 		
-		if(this.state.currentList.length >= 10000)
+		if(this.state.listPoints.length >= 10000)
 			alertMessage = alertMessage + 'Maximum length of the list is 10 000. No more points can be added.\n';
 		
 		if(alertMessage != '')
 			alert(alertMessage);
 		else {
-		this.setState({currentList:[...this.state.currentList, {coordX: this.state.inputCoordX, coordY: this.state.inputCoordY}]});
+		this.setState({listPoints:[...this.state.listPoints, {coordX: this.state.inputCoordX, coordY: this.state.inputCoordY}]});
 		}
 		
 		event.preventDefault();

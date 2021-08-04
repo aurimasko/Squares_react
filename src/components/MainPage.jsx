@@ -6,11 +6,7 @@ import CurrentList from "./CurrentList";
 class MainPage extends React.Component {
 	
 	render() {
-		return(<Layout>
-				 <br/>
-				   <CurrentList/>
-
-				</Layout>);
+		return(<>test</>);
 	}
 }
 

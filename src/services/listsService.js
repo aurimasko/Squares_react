@@ -19,7 +19,7 @@ export const listsService = {
 			}
 		).then(response => { return response.json(); });
 	},	
-	async createList(list) {
+	async createList(listName, points) {
 		return await fetch(
 			endPoints.listsAPIBaseEndPoint,
 			{
@@ -29,12 +29,12 @@ export const listsService = {
 				}),
 				body: JSON.stringify(
 				{
-					Name: list.Name,
-					Points: list.Points
+					Name: listName,
+					Points: points
 				})
 			}).then(response => { return response.json(); });
 	},
-	async updateList(list) {
+	async updateList(list, points) {
 		return await fetch(
 			endPoints.listsAPIBaseEndPoint,
 			{
@@ -45,7 +45,7 @@ export const listsService = {
 				body: JSON.stringify(
 				{
 					Id: list.id,
-					Points: list.Points
+					Points: points
 				})
 			}).then(response => { return response.json(); });
 	},
