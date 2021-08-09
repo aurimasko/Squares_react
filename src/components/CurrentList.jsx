@@ -5,6 +5,7 @@ import ImportFile from './ImportFile';
 import constants from "../constants.js";
 import '../style.css';
 import { listsService } from "../services/listsService.js";
+import TablePagination from "@material-ui/core/TablePagination";
 
 class CurrentList extends React.Component {
 	constructor(props) {
@@ -13,52 +14,33 @@ class CurrentList extends React.Component {
 		this.state = { 
 			inputListName: null,
 			isSaveListButtonClicked: false,
-			isGettingListData: false,
-			sortDirection: 'ascending'
+			sortDirection: 'ascending',
+			sortedByField: '',
+			currentPage: 0,
+			rowsPerPage: 10
 		};
 		
 		this.handleListNameChange = this.handleListNameChange.bind(this);
 		this.handleSaveListSubmit = this.handleSaveListSubmit.bind(this);
+		this.changeCurrentPage = this.changeCurrentPage.bind(this);
+		this.changeRowsPerPage = this.changeRowsPerPage.bind(this);
 	}
-	
-	async componentDidMount() {
-		this.getData();
-	}
-	
-	async componentDidUpdate(prevProps) {
-		if (prevProps.listId != this.props.listId) {
-			this.props.updateList(null);
-			this.setState({isGettingListData: false, isSaveListButtonClicked: false, isGettingListData: false});
-			this.getData();
-		}
-	}
-	
-	async getData() {
-		let id = this.props.listId;
-	
-		if(id != null)
-		{
-			this.setState({isGettingListData: true});
 			
-			const result = await listsService.fetchById(id);
-			
-			if (result.isSuccess === true) {
-				if(result.content != null)
-					this.props.updateList(result.content);
-					this.setState({isGettingListData: false});
-			} else {
-				this.setState({errmessage: 'It is not possible to get lists. Error message: ' + result.message})
-			}
-		}
+	changeCurrentPage(event, newPage) {
+		this.setState({currentPage: newPage});
 	}
-						
+	
+	changeRowsPerPage(event) {
+		this.setState({currentPage: 0, rowsPerPage: parseInt(event.target.value, 10)});
+	}
+	
 	sortPoints(field) {
 		const sortableItems = [...this.props.list.points];
 		const sortFunction = this.state.sortDirection == 'ascending' ? (a, b) => b[field] - a[field] : (a, b) => a[field] - b[field];
 		sortableItems.sort(sortFunction);
 
 		this.props.updateListPoints(sortableItems);
-		this.setState({sortDirection: this.state.sortDirection == 'ascending' ? 'descending' : 'ascending'});
+		this.setState({sortDirection: this.state.sortDirection == 'ascending' ? 'descending' : 'ascending', sortedByField: field});
 	}
 		
 	saveList(name, points) {
@@ -147,28 +129,47 @@ class CurrentList extends React.Component {
 		}
 	}
 	
+	getSortClass(field) { 
+		if(this.state.sortedByField == field)
+		{
+			if(this.state.sortDirection == 'ascending')
+				return "sortAsc";
+			else
+				return "sortDesc";
+		}
+		else
+			return "sort";
+	}
+	
 	render() {
 		return(
 					<div class='block'>
 						<h2>Current list of points</h2>
 						
 						{this.renderListSaveButton()}
-							
-						{this.state.isGettingListData == false ? 
+						{this.props.list.points.length > 0 ? (
+							<div>
+								<button type="submit" onClick={this.handleAllPointsDelete.bind(this)}>Delete all points</button><br/>
+								<button onClick={this.exportList.bind(this)}>Export points to file</button>
+								<br/><br/>
+							</div>
+						) : null}
+						
+						{this.props.isGettingListData == false ? 
 							<div>
 								<table>
 									<thead>
 									{this.props.list.points.length > 0 ?
 										<tr>
-											<th><button type="submit" onClick={this.sortPoints.bind(this,'coordX')}>Coord X</button></th>
-											<th><button type="submit" onClick={this.sortPoints.bind(this, 'coordY')}>Coord Y</button></th>
+											<th><button class={this.getSortClass('coordX')} type="submit" onClick={this.sortPoints.bind(this,'coordX')}>Coord X</button></th>
+											<th><button class={this.getSortClass('coordY')} type="submit" onClick={this.sortPoints.bind(this, 'coordY')}>Coord Y</button></th>
 											<th>Actions</th>
 										</tr> : 
 										<tr><th>List has no points</th></tr>
 									}
 									</thead>
 									<tbody>
-										{this.props.list.points.map((point) => (
+										{this.props.list.points.slice((this.state.rowsPerPage * (this.state.currentPage)), (this.state.rowsPerPage * (this.state.currentPage) + this.state.rowsPerPage)).map((point) => (
 											<tr>
 												<td>{point.coordX}</td>
 												<td>{point.coordY}</td>
@@ -178,11 +179,18 @@ class CurrentList extends React.Component {
 											</tr>
 										))}
 									</tbody>
+									
+									{this.props.list.points.length > 0 &&
+									<TablePagination  
+										count={this.props.list.points.length}
+										page={this.state.currentPage}
+										rowsPerPage={this.state.rowsPerPage}
+										onPageChange={this.changeCurrentPage}
+										onRowsPerPageChange={this.changeRowsPerPage}
+										rowsPerPageOptions={[5, 10, 20, 50]}
+									/>
+									}
 								</table>
-														
-								{this.props.list.points.length > 0 ? (
-									<button type="submit" onClick={this.handleAllPointsDelete.bind(this)}>Delete all points</button>
-								) : null}
 							</div>
 						:
 							<ReactLoading type="balls" color="red" height={50} width={50}/>
@@ -215,6 +223,19 @@ class CurrentList extends React.Component {
 	handleAllPointsDelete() {
 		if(window.confirm('Are you sure you want to delete all points from the current list?'))
 			this.props.updateListPoints([]);
+	}
+
+	
+	exportList() {
+		let fileData = "";
+		this.props.list.points.forEach(point => fileData = fileData + (fileData.length > 0 ? '\n':'') + point.coordX + ' ' + point.coordY);
+		
+		const element = document.createElement("a");
+		const file = new Blob([fileData], {type: 'text/plain'});
+		element.href = URL.createObjectURL(file);
+		element.download = constants.EXPORT_FILE_NAME;
+		document.body.appendChild(element);
+		element.click();
 	}
 	
 	handlePointDeleteSubmit(point) {

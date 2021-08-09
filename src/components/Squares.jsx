@@ -3,6 +3,7 @@ import { squaresService } from "../services/squaresService.js";
 import ReactLoading from "react-loading";
 import constants from "../constants.js";
 import '../style.css';
+import TablePagination from "@material-ui/core/TablePagination";
 
 class Squares extends React.Component {
 	constructor(props) {
@@ -10,10 +11,29 @@ class Squares extends React.Component {
 		
 		this.state = {
 			isCalcSquaresButtonClicked: false,
-			squaresList: { squaresCount: 0, squares: [] }
+			squaresList: { squaresCount: 0, squares: [] },
+			currentPage: 0,
+			rowsPerPage: 10
 		};
+		
+		this.changeCurrentPage = this.changeCurrentPage.bind(this);
+		this.changeRowsPerPage = this.changeRowsPerPage.bind(this);
 	}
 		
+	async componentDidUpdate(prevProps) {
+		if (prevProps.listId != this.props.listId) {
+			this.setState({squaresList: { squaresCount: 0, squares:[] }});
+		}
+	}
+	
+	changeCurrentPage(event, newPage) {
+		this.setState({currentPage: newPage});
+	}
+	
+	changeRowsPerPage(event) {
+		this.setState({currentPage: 0, rowsPerPage: parseInt(event.target.value, 10)});
+	}
+	
 	renderCalculateSquaresButton() {
 				
 		if(!this.state.isCalcSquaresButtonClicked)
@@ -21,7 +41,7 @@ class Squares extends React.Component {
 			if(this.props.listPoints.length > 0)
 			{
 				return(
-					<button type="submit" onClick={this.calculateSquares.bind(this)}>Calculate squares</button>
+					<button type="submit" onClick={this.calculateSquares.bind(this, this.props.listPoints)}>Calculate squares</button>
 				);
 			}
 		}
@@ -33,14 +53,11 @@ class Squares extends React.Component {
 		}
 	
 	}
-		
-	render() {
-		return(
-			<div class='block'>
-				<h2>Squares</h2>
-				{this.renderCalculateSquaresButton()}
-
-				{this.state.squaresList.squaresCount > 0 ?
+	
+	renderSquaresList() {
+		if(this.state.squaresList.squaresCount > 0)
+		{
+			return(
 					<div>							
 						<p>Total square counts in this list of points: {this.state.squaresList.squaresCount}</p>
 							
@@ -57,15 +74,38 @@ class Squares extends React.Component {
 								}
 							</tbody>
 						</table>
+						
+						<TablePagination  
+								count={this.state.squaresList.squaresCount}
+								page={this.state.currentPage}
+								rowsPerPage={this.state.rowsPerPage}
+								onPageChange={this.changeCurrentPage}
+								onRowsPerPageChange={this.changeRowsPerPage}
+								rowsPerPageOptions={[5, 10, 20, 50]}
+						/>
 					</div>
-					:
-					<p>No squares are found!</p>
-				}
+				);
+		}
+		else
+		{
+			if(!this.state.isCalcSquaresButtonClicked)
+				return(<p>No squares are found!</p>);
+			else
+				return null;
+		}
+	}
+		
+	render() {
+		return(
+			<div class='block'>
+				<h2>Squares</h2>
+				{this.renderCalculateSquaresButton()}
+				{this.renderSquaresList()}
 			</div>	
 		);
 	}
 	
-	calculateSquares2(points) {
+	calculateSquares(points) {
 		this.setState({isCalcSquaresButtonClicked: true, squaresList: { squaresCount: 0, squares: [] }});
 		
 		squaresService.calculateSquares(points).then((data) => {
@@ -79,21 +119,6 @@ class Squares extends React.Component {
 			this.setState({isCalcSquaresButtonClicked: false});	
 		});	
 	}
-	calculateSquares(event) {
-		this.setState({isCalcSquaresButtonClicked: true, squaresList: { squaresCount: 0, squares: [] }});
-		
-		squaresService.calculateSquares(this.props.listPoints).then((data) => {
-			if(data.isSuccess) {
-				this.setState({squaresList:data.content});
-			}
-			else
-			{
-				alert('Error: ' + data.message);
-			}
-			this.setState({isCalcSquaresButtonClicked: false});	
-		});	
-	}
-
 }
 export default Squares;
 
