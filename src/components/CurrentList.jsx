@@ -7,17 +7,6 @@ import '../style.css';
 import { listsService } from "../services/listsService.js";
 import TablePagination from "@material-ui/core/TablePagination";
 
-export  function printArray(arr) {
-let str = "";
-
-  for (let item of arr) {
-    if (Array.isArray(item)) str += printArray(item);
-    else str += item + ", ";
-  }
-  return str;
-}
-
-
 class CurrentList extends React.Component {
 	constructor(props) {
 		super(props);
