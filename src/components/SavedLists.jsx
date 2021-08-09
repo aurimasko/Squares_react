@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Layout from './Layout';
 import { listsService } from "../services/listsService.js";
 
-class Lists extends React.Component {
+class SavedLists extends React.Component {
 	
 	constructor(props) {
 		super(props);
@@ -40,22 +40,23 @@ class Lists extends React.Component {
 		}
 	}
 	
-	
 	render() {
 		return(
 			<Layout>
-				{this.state.errmessage}
-							All saved lists (select which one you want to load):<br/>
-							
-							<ul>
-								{this.state.lists.map((list) => (
+				<div class='container'>
+					<div class='block'>
+						<p>All saved lists (select which one you want to load):</p>
 
-									<li><a href={'list/'+list.id}>{list.name}</a> <button type="submit" onClick={this.handleDeleteListSubmit.bind(this, list)}>Delete this list</button></li>
-								))}
-							</ul>
+						<ul>
+							{this.state.lists.map((list) => (
+								<li><a href={'list/'+list.id}>{list.name}</a> <button type="submit" onClick={this.handleDeleteListSubmit.bind(this, list)}>Delete this list</button></li>
+							))}
+						</ul>
+					</div>
+				</div>
 			</Layout>
 		);
 	}
 }
 
-export default Lists;
+export default SavedLists;
