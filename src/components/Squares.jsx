@@ -21,7 +21,7 @@ class Squares extends React.Component {
 			if(this.props.listPoints.length > 0)
 			{
 				return(
-					<button type="submit" onClick={this.calculateSquares.bind(this)}>Calculate squares</button>
+					<button type="submit" onClick={this.calculateSquares.bind(this, this.props.listPoints)}>Calculate squares</button>
 				);
 			}
 		}
@@ -65,7 +65,7 @@ class Squares extends React.Component {
 		);
 	}
 	
-	calculateSquares2(points) {
+	calculateSquares(points) {
 		this.setState({isCalcSquaresButtonClicked: true, squaresList: { squaresCount: 0, squares: [] }});
 		
 		squaresService.calculateSquares(points).then((data) => {
@@ -79,7 +79,7 @@ class Squares extends React.Component {
 			this.setState({isCalcSquaresButtonClicked: false});	
 		});	
 	}
-	calculateSquares(event) {
+	/*calculateSquares(event) {
 		this.setState({isCalcSquaresButtonClicked: true, squaresList: { squaresCount: 0, squares: [] }});
 		
 		squaresService.calculateSquares(this.props.listPoints).then((data) => {
@@ -92,7 +92,7 @@ class Squares extends React.Component {
 			}
 			this.setState({isCalcSquaresButtonClicked: false});	
 		});	
-	}
+	}*/
 
 }
 export default Squares;
