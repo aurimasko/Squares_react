@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from "react-router-dom";
-import CurrentList from "./CurrentList";
-import { listsService } from "../services/listsService.js";
+import '../style.css';
 
 class Layout extends React.Component {
 	
@@ -18,16 +17,16 @@ class Layout extends React.Component {
 
 	
 	render() {
-		return(<div>
-					<div>
-					  <Link to={'/list'} onClick={this.handleUseOther}>Create new list</Link><br/>
-					  <Link to={'/lists'} onClick={this.handleUseOther}>Saved lists</Link> <br/>
-				   </div>
+		return(<>
+					<header>
+					  <Link to={'/list'} onClick={this.handleUseOther}>Create new list</Link>
+					  <Link to={'/lists'} onClick={this.handleUseOther}>Saved lists</Link> 
+				   </header>
 				  
-				   <div>
+				   <body>
 						{this.props.children}
-					</div>
-				</div>);
+					</body>
+				</>);
 	}
 
 }

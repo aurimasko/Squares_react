@@ -1,0 +1,7 @@
+module.exports = {
+	MAX_LIST_LENGTH: 10000,
+	MIN_X_COORD: -5000,
+	MAX_X_COORD: 5000,
+	MIN_Y_COORD: -5000,
+	MAX_Y_COORD: 5000
+}
