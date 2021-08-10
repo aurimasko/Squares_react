@@ -1,115 +1,250 @@
-					import React from 'react';
-import { Link } from "react-router-dom";
-import Layout from './Layout';
+import React from 'react';
+import ReactLoading from "react-loading";
+import AddPoint from './AddPoint';
+import ImportFile from './ImportFile';
+import constants from "../constants.js";
+import '../style.css';
+import { listsService } from "../services/listsService.js";
+import TablePagination from "@material-ui/core/TablePagination";
 
 class CurrentList extends React.Component {
-	
 	constructor(props) {
 		super(props);
 		
-		this.state = {
-			coordX: null,
-			coordY: null, 
-			currentList: []
+		this.state = { 
+			inputListName: null,
+			isSaveListButtonClicked: false,
+			sortDirection: 'ascending',
+			sortedByField: '',
+			currentPage: 0,
+			rowsPerPage: 10
 		};
 		
-		this.handleCoordXChange = this.handleCoordXChange.bind(this);
-		this.handleCoordYChange = this.handleCoordYChange.bind(this);
-		this.handleSubmit = this.handleSubmit.bind(this);
+		this.handleListNameChange = this.handleListNameChange.bind(this);
+		this.handleSaveListSubmit = this.handleSaveListSubmit.bind(this);
+		this.changeCurrentPage = this.changeCurrentPage.bind(this);
+		this.changeRowsPerPage = this.changeRowsPerPage.bind(this);
 	}
-
-	render() {
-		return(
-			<div>	
-						Current list of points: <br/>
-						{this.state.currentList.length > 0 ? (
-							<button type="submit" onClick={this.handleAllPointsDelete.bind(this)}>Delete all points</button>
-						) : null}
-						
-						<table>
-							<thead>
-								<tr>
-									<th>Coord X</th>
-									<th>Coord Y</th>
-									<th>Actions</th>
-								</tr>
-							</thead>
-							
-							<tbody>
-								{this.state.currentList.map((point) => (
-									<tr>
-										<td>{point.pointX}</td>
-										<td>{point.pointY}</td>
-										<td>
-											<button type="submit" onClick={this.handlePointDeleteSubmit.bind(this, point)}>Delete point</button>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-						<br/>
-						Add new point to the current list:
-				
-						<form onSubmit={this.handleSubmit}>
-							<label>Coordinate X:</label>
-							<input value={this.state.coordX} type="number" onChange={this.handleCoordXChange}/>
-							<br/>
-							<label>Coordinate Y:</label>
-							<input value={this.state.coordY} type="number" onChange={this.handleCoordYChange}/>
-							<br/>
-							<input type="submit" value="Add point"/>
-						</form>
-					</div>
-					
-					
-		);
+			
+	changeCurrentPage(event, newPage) {
+		this.setState({currentPage: newPage});
 	}
 	
-	handleCoordXChange(event) {
-		this.setState({ coordX: event.target.value });
+	changeRowsPerPage(event) {
+		this.setState({currentPage: 0, rowsPerPage: parseInt(event.target.value, 10)});
 	}
-	handleCoordYChange(event) {
-		this.setState({ coordY: event.target.value });
+	
+	sortPoints(field) {
+		const sortableItems = [...this.props.list.points];
+		const sortFunction = this.state.sortDirection == 'ascending' ? (a, b) => b[field] - a[field] : (a, b) => a[field] - b[field];
+		sortableItems.sort(sortFunction);
+
+		this.props.updateListPoints(sortableItems);
+		this.setState({sortDirection: this.state.sortDirection == 'ascending' ? 'descending' : 'ascending', sortedByField: field});
+	}
+		
+	saveList(name, points) {
+		this.setState({isSaveListButtonClicked: true});
+			
+			listsService.createList(name, points).then((data) => {
+				if(data.isSuccess) {
+					alert('List was successfuly saved');
+				}
+				else
+				{
+					alert('Error: ' + data.message);
+				}
+				this.setState({isSaveListButtonClicked: false});	
+			});		
+	}
+	
+	renderListSaveButton(){
+		if(!this.state.isSaveListButtonClicked)
+		{
+			if(this.props.list.name != null) {
+				return(
+					<form onSubmit={this.saveList.bind(this, this.props.list.name, this.props.list.points)}>
+						<label>List name: {this.props.list.name}</label>
+						<br/>
+						<input type="submit" value="Save changes"/>
+						<br/>
+					</form>
+				);
+			}
+			else
+			{
+				if(this.props.list.points.length > 0) {
+					return(
+						<form onSubmit={this.handleSaveListSubmit}>
+							<label>List name: </label>
+							<input type="text" value={this.state.inputListName}  onChange={this.handleListNameChange}/>
+							<br/>
+							<input type="submit" value="Save the list"/>
+							<br/>
+						</form>	
+					);
+				}
+			}
+		}
+		else
+		{
+			return(
+				<ReactLoading type="balls" color="red" height={50} width={50}/>
+			);
+		}
+	}
+	
+	renderCalculateSquaresButton() {
+				
+		if(!this.state.isCalcSquaresButtonClicked)
+		{
+			if(this.props.list.points.length > 0)
+			{
+				return(
+					<button type="submit" onClick={this.calculateSquares.bind(this)}>Calculate squares</button>
+				);
+			}
+		}
+		else
+		{
+			return(
+				<ReactLoading type="balls" color="red" height={50} width={50}/>
+			);
+		}
+	
+	}
+						
+	renderAddNewPoints() {
+		if(this.props.list.points.length >= constants.MAX_LIST_LENGTHmaximumListLength){
+			return(<p>List if full (max {constants.MAX_LIST_LENGTH} points). In order to add new points, you need to delete some of the existing ones.</p>);
+		}
+		else
+		{
+			return (
+					<div>
+						<AddPoint updateListPoints={this.props.updateListPoints} listPoints={this.props.list.points}/>
+						<ImportFile listPoints={this.props.list.points} updateListPoints={this.props.updateListPoints}/>			
+					</div>
+				);
+		}
+	}
+	
+	getSortClass(field) { 
+		if(this.state.sortedByField == field)
+		{
+			if(this.state.sortDirection == 'ascending')
+				return "sortAsc";
+			else
+				return "sortDesc";
+		}
+		else
+			return "sort";
+	}
+	
+	render() {
+		return(
+					<div class='block'>
+						<h2>Current list of points</h2>
+						
+						{this.renderListSaveButton()}
+						{this.props.list.points.length > 0 ? (
+							<div>
+								<button type="submit" onClick={this.handleAllPointsDelete.bind(this)}>Delete all points</button><br/>
+								<button onClick={this.exportList.bind(this)}>Export points to file</button>
+								<br/><br/>
+							</div>
+						) : null}
+						
+						{this.props.isGettingListData == false ? 
+							<div>
+								<table>
+									<thead>
+									{this.props.list.points.length > 0 ?
+										<tr>
+											<th><button class={this.getSortClass('coordX')} type="submit" onClick={this.sortPoints.bind(this,'coordX')}>Coord X</button></th>
+											<th><button class={this.getSortClass('coordY')} type="submit" onClick={this.sortPoints.bind(this, 'coordY')}>Coord Y</button></th>
+											<th>Actions</th>
+										</tr> : 
+										<tr><th>List has no points</th></tr>
+									}
+									</thead>
+									<tbody>
+										{this.props.list.points.slice((this.state.rowsPerPage * (this.state.currentPage)), (this.state.rowsPerPage * (this.state.currentPage) + this.state.rowsPerPage)).map((point) => (
+											<tr>
+												<td>{point.coordX}</td>
+												<td>{point.coordY}</td>
+												<td>
+													<button type="submit" onClick={this.handlePointDeleteSubmit.bind(this, point)}>Delete point</button>
+												</td>
+											</tr>
+										))}
+									</tbody>
+									
+									{this.props.list.points.length > 0 &&
+									<TablePagination  
+										count={this.props.list.points.length}
+										page={this.state.currentPage}
+										rowsPerPage={this.state.rowsPerPage}
+										onPageChange={this.changeCurrentPage}
+										onRowsPerPageChange={this.changeRowsPerPage}
+										rowsPerPageOptions={[5, 10, 20, 50]}
+									/>
+									}
+								</table>
+							</div>
+						:
+							<ReactLoading type="balls" color="red" height={50} width={50}/>
+						}
+						
+						{this.renderAddNewPoints()}
+					</div>
+		);
+	}
+
+	handleListNameChange(event) {
+		this.setState({inputListName: event.target.value});
+	}
+			
+	handleSaveListSubmit(event) {
+		
+		if(this.state.inputListName == "" || this.state.inputListName == null)
+			alert('Please insert list name!');
+		else
+		{
+			const newList = this.props.list;
+			newList.name = this.state.inputListName;
+			this.setState({list: newList});
+
+			this.saveList(this.props.list.name, this.props.list.points);
+		}		
+		event.preventDefault();
 	}
 	
 	handleAllPointsDelete() {
 		if(window.confirm('Are you sure you want to delete all points from the current list?'))
-			this.setState({currentList: []});
+			this.props.updateListPoints([]);
+	}
+
+	
+	exportList() {
+		let fileData = "";
+		this.props.list.points.forEach(point => fileData = fileData + (fileData.length > 0 ? '\n':'') + point.coordX + ' ' + point.coordY);
+		
+		const element = document.createElement("a");
+		const file = new Blob([fileData], {type: 'text/plain'});
+		element.href = URL.createObjectURL(file);
+		element.download = constants.EXPORT_FILE_NAME;
+		document.body.appendChild(element);
+		element.click();
 	}
 	
 	handlePointDeleteSubmit(point) {
-		const newList = this.state.currentList;
+		const newList = this.props.list.points;
 		
 		if(newList.indexOf(point) > -1){
 			newList.splice(newList.indexOf(point), 1);
-			this.setState({currentList: newList});
+			this.props.updateListPoints(newList);
 		}
-	}
-	
-	handleSubmit(event) {
-		let alertMessage = '';
-		
-		if(this.state.coordX < -5000 || this.state.coordX > 5000 || this.state.coordX == null) {
-			alertMessage = alertMessage + 'Coordinate X must be between -5000 and 5000.\n';
-		}
-		if(this.state.coordY < -5000 || this.state.coordY > 5000 || this.state.coordY == null) {
-			alertMessage = alertMessage +  'Coordinate Y must be between -5000 and 5000.\n';
-		}
-		
-		if(this.state.currentList.some(item => this.state.coordX == item.pointX && this.state.coordY == item.pointY)) {
-			alertMessage = alertMessage + 'Duplicate points are not allowed\n';
-		}
-		
-		if(this.state.currentList.length >= 10000)
-			alertMessage = alertMessage + 'Maximum length of the list is 10 000. No more points can be added.\n';
-		
-		if(alertMessage != '')
-			alert(alertMessage);
-		else {
-		this.setState({currentList:[...this.state.currentList, {pointX: this.state.coordX, pointY: this.state.coordY}]});
-		}
-		
-		event.preventDefault();
 	}
 }
 export default CurrentList;
