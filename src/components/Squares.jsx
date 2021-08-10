@@ -64,9 +64,9 @@ class Squares extends React.Component {
 						<table>								
 							<tbody>
 								{this.state.squaresList.squaresCount > 0 && 
-								this.state.squaresList.squares.map((square) => (
+								this.state.squaresList.squares.slice((this.state.rowsPerPage * (this.state.currentPage)), (this.state.rowsPerPage * (this.state.currentPage) + this.state.rowsPerPage)).map((square) => (
 									<tr>
-										{square.points.map((point) => (
+										{square.map((point) => (
 											<td>({point.coordX};{point.coordY})</td>
 										))}
 									</tr>
