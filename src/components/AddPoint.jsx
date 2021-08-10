@@ -23,10 +23,10 @@ class AddPoint extends React.Component {
 					
 				<form onSubmit={this.handleSubmit}>
 					<label>Coordinate X: </label>
-					<input value={this.state.inputCoordX} type="number" onChange={this.handleCoordXChange}/>
+					<input value={this.state.inputCoordX} type="text" onChange={this.handleCoordXChange}/>
 					<br/>
 					<label>Coordinate Y: </label>
-					<input value={this.state.inputCoordY} type="number" onChange={this.handleCoordYChange}/>
+					<input value={this.state.inputCoordY} type="text" onChange={this.handleCoordYChange}/>
 					<br/><br/>
 					<input type="submit" value="Add point"/>
 				</form>
@@ -43,6 +43,12 @@ class AddPoint extends React.Component {
 	
 	handleSubmit(event) {
 		let alertMessage = '';
+		
+		if(!Number.isSafeInteger(this.state.inputCoordX*1))
+			alertMessage = alertMessage + 'Coordinate X must be integer!\n';
+		
+		if(!Number.isSafeInteger(this.state.inputCoordY*1))
+			alertMessage = alertMessage + 'Coordinate Y must be integer!\n';
 		
 		if(this.state.inputCoordX < constants.MIN_X_COORD || this.state.inputCoordX > constants.MAX_X_COORD || this.state.inputCoordX == null) {
 			alertMessage = alertMessage + 'Coordinate X must be between ' + constants.MIN_X_COORD + ' and ' + constants.MAX_X_COORD + '.\n';
