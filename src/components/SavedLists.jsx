@@ -9,8 +9,7 @@ class SavedLists extends React.Component {
 		super(props);
 		
 		this.state = {
-			lists: [],
-			errmessage: ''
+			lists: []
 		};
 	}
 	
@@ -24,7 +23,7 @@ class SavedLists extends React.Component {
 				lists: result.content
 			});
 		} else {
-			this.setState({errmessage: 'It is not possible to get lists. Error message: ' + result.errmessage})
+			alert(result.Message);
 		}
 	}
 
@@ -36,7 +35,7 @@ class SavedLists extends React.Component {
 				lists: this.state.lists.filter(l => l.name != result.content.name)
 			});
 		} else {
-			this.setState({errmessage: 'It is not possible to delete this list. Error message: ' + result.errmessage})
+			alert(result.Message);
 		}
 	}
 	
