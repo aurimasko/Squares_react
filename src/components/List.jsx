@@ -43,12 +43,13 @@ class List extends React.Component {
 			
 			const result = await listsService.fetchById(id);
 			
-			if (result.isSuccess === true) {
+			if (result.isSuccess == true) {
 				if(result.content != null)
-					this.setState({list:result.content, isGettingListData: false});
+					this.setState({list:result.content});
 			} else {
-				this.setState({errmessage: 'It is not possible to get lists. Error message: ' + result.message})
+				alert('It is not possible to get lists. Error message: ' + result.message);
 			}
+			this.setState({isGettingListData: false});
 		}
 	}
 		

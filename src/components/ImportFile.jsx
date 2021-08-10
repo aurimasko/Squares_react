@@ -57,7 +57,7 @@ class ImportFile extends React.Component {
 				}
 			} else {
 				this.setState({isImportFileEnabled: true});
-				alert('It is not possible to get lists. Error message: ' + result.message);
+				alert('It is not possible to get file body. Error message: ' + result.message);
 			}
 		}
 		
